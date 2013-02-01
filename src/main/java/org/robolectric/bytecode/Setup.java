@@ -1,8 +1,8 @@
 package org.robolectric.bytecode;
 
 import android.R;
+import android.net.Uri;
 import android.net.Uri__FromAndroid;
-import javassist.CtClass;
 import org.robolectric.AndroidManifest;
 import org.robolectric.RobolectricContext;
 import org.robolectric.annotation.DisableStrictI18n;
@@ -67,9 +67,9 @@ public class Setup {
 
 
     public boolean invokeApiMethodBodiesWhenShadowMethodIsMissing(Class clazz, String methodName, Class<?>[] paramClasses) {
-        if (clazz.getName().startsWith("android.support")) {
-            return true;
-        }
+        if (clazz.getName().equals(Uri.class.getName())) return true;
+        if (clazz.getName().startsWith("android.support.v4")) return true;
+
         return !isFromAndroidSdk(clazz);
     }
 
@@ -78,19 +78,12 @@ public class Setup {
             return false;
         }
 
-        if (isFromAndroidSdk(classInfo)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public boolean shouldInstrument(Class clazz) {
-        if (clazz.isInterface() || clazz.isAnnotation() || clazz.getAnnotation(DoNotInstrument.class) != null) {
+        if (classInfo.getName().startsWith("android.support")) {
             return false;
         }
 
-        if (isFromAndroidSdk(clazz)) {
+
+        if (isFromAndroidSdk(classInfo)) {
             return true;
         }
 

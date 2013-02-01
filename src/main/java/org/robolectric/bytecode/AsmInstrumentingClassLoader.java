@@ -8,18 +8,22 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceClassVisitor;
+import org.robolectric.util.Util;
 
-import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +49,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
         super(classLoader);
         this.setup = setup;
         System.err.println("NEW AsmInstrumentingClassLoader!!!!!!!!!!!!!!!!!!!!!!!");
+        new File("./output.txt").delete();
     }
 
     @Override
@@ -69,16 +74,25 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
     protected Class<?> findClass(final String className) throws ClassNotFoundException {
         if (setup.shouldAcquire(className)) {
             InputStream classBytesStream = getResourceAsStream(className.replace('.', '/') + ".class");
+          if (classBytesStream == null) throw new ClassNotFoundException(className);
 
-            if (classBytesStream == null) throw new ClassNotFoundException(className);
+            byte[] origClassBytes;
+            try {
+                origClassBytes = Util.readBytes(classBytesStream);
+            } catch (IOException e) {
+                throw new ClassNotFoundException("couldn't load " + className, e);
+            }
 
-            Class<?> originalClass = super.loadClass(className);
+            final ClassReader classReader = new ClassReader(origClassBytes);
+            ClassNode classNode = new ClassNode();
+            classReader.accept(classNode, 0);
+
             try {
                 byte[] bytes;
-                if (setup.shouldInstrument(originalClass)) {
-                    bytes = getInstrumentedBytes(className, classBytesStream);
+                if (setup.shouldInstrument(new AsmClassInfo(className, classNode))) {
+                    bytes = getInstrumentedBytes(className, classNode);
                 } else {
-                    bytes = readBytes(classBytesStream);
+                    bytes = origClassBytes;
                 }
                 return defineClass(className, bytes, 0, bytes.length);
             } catch (Exception e) {
@@ -90,15 +104,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
         }
     }
 
-    private byte[] getInstrumentedBytes(String className, InputStream classBytesStream) throws ClassNotFoundException {
-        final ClassReader classReader;
-        try {
-            classReader = new ClassReader(classBytesStream);
-        } catch (IOException e) {
-            throw new ClassNotFoundException("couldn't load " + className, e);
-        }
-        ClassNode classNode = new ClassNode();
-        classReader.accept(classNode, 0);
+    private byte[] getInstrumentedBytes(String className, ClassNode classNode) throws ClassNotFoundException {
         new ClassInstrumentor(classNode).instrument();
 
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
@@ -110,22 +116,16 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
 
         if (debug || className.contains("GeoPoint") || className.contains("ClassWithFunnyConstructors")) {
             try {
-                new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(new FileWriter("./output.txt"))), 0);
+                FileOutputStream fileOutputStream = new FileOutputStream("tmp/" + className + ".class");
+                fileOutputStream.write(classBytes);
+                fileOutputStream.close();
+                new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(new FileWriter("./output.txt", true))), 0);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
 
         return classBytes;
-    }
-
-    private static byte[] readBytes(InputStream classBytesStream) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        int c;
-        while ((c = classBytesStream.read()) != -1) {
-            baos.write(c);
-        }
-        return baos.toByteArray();
     }
 
     private static class MyGenerator extends GeneratorAdapter {
@@ -448,6 +448,42 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
                     m.unbox(returnType);
                     m.visitLabel(finished);
                 }
+        }
+    }
+
+    public static class AsmClassInfo implements ClassInfo {
+      private final String className;
+      private ClassNode classNode;
+
+        public AsmClassInfo(String className, ClassNode classNode) {
+          this.className = className;
+          this.classNode = classNode;
+        }
+
+        @Override
+        public boolean isInterface() {
+            return (classNode.access & ACC_INTERFACE) != 0;
+        }
+
+        @Override
+        public boolean isAnnotation() {
+            return (classNode.access & ACC_ANNOTATION) != 0;
+        }
+
+        @Override
+        public boolean hasAnnotation(Class<? extends Annotation> annotationClass) {
+            String internalName = "L" + annotationClass.getName().replace('.', '/') + ";";
+            if (classNode.visibleAnnotations == null) return false;
+            for (Object visibleAnnotation : classNode.visibleAnnotations) {
+                AnnotationNode annotationNode = (AnnotationNode) visibleAnnotation;
+                if (annotationNode.desc.equals(internalName)) return true;
+            }
+            return false;
+        }
+
+        @Override
+        public String getName() {
+            return className;
         }
     }
 }

@@ -148,7 +148,8 @@ public class InstrumentingClassLoaderTest {
     @Test
     public void callingStaticDirectAccessMethodShouldWork() throws Exception {
         Class<?> exampleClass = loadClass(ClassWithStaticMethod.class);
-        String methodName = RobolectricInternals.directMethodName(ClassWithStaticMethod.class.getName(), "staticMethod");
+        String methodName = RobolectricInternals.directMethodName(
+            ClassWithStaticMethod.class.getName(), "staticMethod");
         Method directMethod = exampleClass.getDeclaredMethod(methodName, String.class);
 
         assertEquals("staticMethod(value1)", directMethod.invoke(null, "value1"));
@@ -447,11 +448,6 @@ public class InstrumentingClassLoaderTest {
         @Override
         public boolean shouldAcquire(String name) {
             return shouldAcquire && name.equals(ExampleClass.class.getName());
-        }
-
-        @Override
-        public boolean shouldInstrument(Class clazz) {
-            return shouldInstrument && clazz.equals(ExampleClass.class);
         }
     }
 

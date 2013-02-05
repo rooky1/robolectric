@@ -258,7 +258,6 @@ import org.robolectric.shadows.ShadowFilter;
 import org.robolectric.shadows.ShadowFloatMath;
 import org.robolectric.shadows.ShadowFrameLayout;
 import org.robolectric.shadows.ShadowGallery;
-import org.robolectric.shadows.ShadowGeoPoint;
 import org.robolectric.shadows.ShadowGeocoder;
 import org.robolectric.shadows.ShadowGestureDetector;
 import org.robolectric.shadows.ShadowGridView;
@@ -273,7 +272,6 @@ import org.robolectric.shadows.ShadowInputMethodManager;
 import org.robolectric.shadows.ShadowIntent;
 import org.robolectric.shadows.ShadowIntentFilter;
 import org.robolectric.shadows.ShadowIntentFilterAuthorityEntry;
-import org.robolectric.shadows.ShadowItemizedOverlay;
 import org.robolectric.shadows.ShadowJsPromptResult;
 import org.robolectric.shadows.ShadowJsResult;
 import org.robolectric.shadows.ShadowKeyEvent;
@@ -295,9 +293,6 @@ import org.robolectric.shadows.ShadowLocation;
 import org.robolectric.shadows.ShadowLocationManager;
 import org.robolectric.shadows.ShadowLog;
 import org.robolectric.shadows.ShadowLooper;
-import org.robolectric.shadows.ShadowMapActivity;
-import org.robolectric.shadows.ShadowMapController;
-import org.robolectric.shadows.ShadowMapView;
 import org.robolectric.shadows.ShadowMarginLayoutParams;
 import org.robolectric.shadows.ShadowMatrix;
 import org.robolectric.shadows.ShadowMatrixCursor;
@@ -319,7 +314,6 @@ import org.robolectric.shadows.ShadowNotFoundException;
 import org.robolectric.shadows.ShadowNotification;
 import org.robolectric.shadows.ShadowNotificationManager;
 import org.robolectric.shadows.ShadowObjectAnimator;
-import org.robolectric.shadows.ShadowOverlayItem;
 import org.robolectric.shadows.ShadowPagerAdapter;
 import org.robolectric.shadows.ShadowPaint;
 import org.robolectric.shadows.ShadowPair;
@@ -384,6 +378,7 @@ import org.robolectric.shadows.ShadowStatFs;
 import org.robolectric.shadows.ShadowStateListDrawable;
 import org.robolectric.shadows.ShadowSurfaceView;
 import org.robolectric.shadows.ShadowSyncResult;
+import org.robolectric.shadows.ShadowSystemProperties;
 import org.robolectric.shadows.ShadowTabActivity;
 import org.robolectric.shadows.ShadowTabHost;
 import org.robolectric.shadows.ShadowTabSpec;
@@ -399,6 +394,7 @@ import org.robolectric.shadows.ShadowTypedArray;
 import org.robolectric.shadows.ShadowTypedValue;
 import org.robolectric.shadows.ShadowTypeface;
 import org.robolectric.shadows.ShadowURLSpan;
+import org.robolectric.shadows.ShadowUri;
 import org.robolectric.shadows.ShadowUriMatcher;
 import org.robolectric.shadows.ShadowValueAnimator;
 import org.robolectric.shadows.ShadowVibrator;
@@ -461,7 +457,7 @@ public class Robolectric {
         }
 
         try {
-            getShadowWrangler().bindShadowClass(realClass.value(), shadowClass);
+            getShadowWrangler().bindShadowClass(realClass.value(), shadowClass, realClass.callThroughByDefault());
         } catch (TypeNotPresentException typeLoadingException) {
             String unloadableClassName = shadowClass.getSimpleName();
             if (isIgnorableClassLoadingException(typeLoadingException)) {
@@ -498,6 +494,7 @@ public class Robolectric {
 
     public static void bindDefaultShadowClasses() {
         bindShadowClasses(getDefaultShadowClasses());
+        getShadowWrangler().bindShadowClass("android.os.SystemProperties", ShadowSystemProperties.class, false);
     }
 
     public static void bindShadowClasses(List<Class<?>> shadowClasses) {
@@ -755,6 +752,7 @@ public class Robolectric {
                 ShadowTypedValue.class,
                 ShadowTypeface.class,
                 ShadowUriMatcher.class,
+                ShadowUri.class,
                 ShadowURLSpan.class,
                 ShadowValueAnimator.class,
                 ShadowVibrator.class,
@@ -783,7 +781,7 @@ public class Robolectric {
         Robolectric.application = null;
         ShadowBitmapFactory.reset();
         ShadowDrawable.reset();
-//        ShadowMediaStore.reset();
+        ShadowMediaStore.reset();
         ShadowLog.reset();
         ShadowContext.clearFilesAndCache();
         ShadowLooper.resetThreadLoopers();

@@ -1,7 +1,6 @@
 package org.robolectric.bytecode;
 
 import android.R;
-import android.net.Uri;
 import android.net.Uri__FromAndroid;
 import org.robolectric.AndroidManifest;
 import org.robolectric.RobolectricContext;
@@ -67,9 +66,12 @@ public class Setup {
 
 
     public boolean invokeApiMethodBodiesWhenShadowMethodIsMissing(Class clazz, String methodName, Class<?>[] paramClasses) {
-        if (clazz.getName().equals(Uri.class.getName())) return true;
         if (clazz.getName().startsWith("android.support.v4")) return true;
+        if (methodName.equals("equals") && paramClasses.length == 1 && paramClasses[0] == Object.class) return true;
+        if (methodName.equals("hashCode") && paramClasses.length == 0) return true;
+        if (methodName.equals("toString") && paramClasses.length == 0) return true;
 
+//        return true;
         return !isFromAndroidSdk(clazz);
     }
 

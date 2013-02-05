@@ -27,9 +27,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 
 import static org.objectweb.asm.Type.*;
 
@@ -99,7 +101,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
                 throw new ClassNotFoundException("couldn't load " + className, e);
             }
         } else {
-            throw new IllegalStateException();
+            throw new IllegalStateException("how did we get here? " + className);
 //            return super.findClass(className);
         }
     }
@@ -198,10 +200,11 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
         }
 
         public void instrument() {
-            boolean foundDefaultConstructor = false;
+            Set<String> foundMethods = new HashSet<String>();
+
             List<MethodNode> methods = new ArrayList<MethodNode>(classNode.methods);
             for (MethodNode method : methods) {
-                if (method.name.equals("<init>") && method.desc.equals("()V")) foundDefaultConstructor = true;
+                foundMethods.add(method.name + method.desc);
 
                 if (method.name.equals("<clinit>")) {
                     method.name = STATIC_INITIALIZER_METHOD_NAME;
@@ -215,7 +218,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
 
             classNode.fields.add(new FieldNode(ACC_PUBLIC, CLASS_HANDLER_DATA_FIELD_NAME, OBJECT_DESC, OBJECT_DESC, null));
 
-            if (!foundDefaultConstructor) {
+            if (!foundMethods.contains("<init>()V")) {
                 MethodNode defaultConstructor = new MethodNode(ACC_PUBLIC, "<init>", "()V", "()V", null);
                 MyGenerator m = new MyGenerator(defaultConstructor);
                 m.loadThis();
@@ -245,9 +248,29 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
                 classNode.methods.add(directCallConstructor);
             }
 
+            if (!isEnum()) {
+                instrumentSpecial(foundMethods, "equals", "(Ljava/lang/Object;)Z");
+                instrumentSpecial(foundMethods, "hashCode", "()I");
+            }
+            instrumentSpecial(foundMethods, "toString", "()Ljava/lang/String;");
+
 //            for (MethodNode method : (List<MethodNode>)classNode.methods) {
 //                System.out.println("method = " + method.name + method.desc);
 //            }
+        }
+
+        private void instrumentSpecial(Set<String> foundMethods, final String methodName, String methodDesc) {
+            if (!foundMethods.contains(methodName + methodDesc)) {
+                MethodNode methodNode = new MethodNode(ACC_PUBLIC, methodName, methodDesc, null, null);
+                MyGenerator m = new MyGenerator(methodNode);
+                m.loadThis();
+                m.loadArgs();
+                m.invokeMethod("java/lang/Object", methodNode);
+                m.returnValue();
+                m.endMethod();
+                classNode.methods.add(methodNode);
+                instrumentNormalMethod(methodNode);
+            }
         }
 
         private void instrumentConstructor(MethodNode method) {
@@ -334,13 +357,14 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
 
         private void instrumentNormalMethod(MethodNode method) {
             fixAccess(method);
+            method.access = method.access & ~ACC_FINAL;
 
             String originalName = method.name;
             method.name = RobolectricInternals.directMethodName(originalName);
             classNode.methods.add(redirectorMethod(method, RobolectricInternals.directMethodName(className, originalName)));
 
             MethodNode delegatorMethodNode = new MethodNode(method.access, originalName, method.desc, method.signature, exceptionArray(method));
-            delegatorMethodNode.access &= ~(ACC_NATIVE | ACC_ABSTRACT);
+            delegatorMethodNode.access &= ~(ACC_NATIVE | ACC_ABSTRACT | ACC_FINAL);
 
             MyGenerator m = new MyGenerator(delegatorMethodNode);
 
@@ -378,7 +402,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
 
         private MethodNode redirectorMethod(MethodNode method, String newName) {
             MethodNode redirector = new MethodNode(ASM4, newName, method.desc, method.signature, exceptionArray(method));
-            redirector.access = method.access & ~(ACC_NATIVE | ACC_ABSTRACT);
+            redirector.access = method.access & ~(ACC_NATIVE | ACC_ABSTRACT | ACC_FINAL);
             MyGenerator m = new MyGenerator(redirector);
 
             m.invokeMethod(internalClassName, method);
@@ -448,6 +472,10 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
                     m.unbox(returnType);
                     m.visitLabel(finished);
                 }
+        }
+
+        private boolean isEnum() {
+            return (classNode.access & ACC_ENUM) != 0;
         }
     }
 

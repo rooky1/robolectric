@@ -20,9 +20,19 @@ public class ShadowWrangler implements ClassHandler {
     private boolean strictI18n = false;
 
     private final Map<Class, MetaShadow> metaShadowMap = new HashMap<Class, MetaShadow>();
-    private Map<String, String> shadowClassMap = new HashMap<String, String>();
+    private Map<String, ShadowConfig> shadowClassMap = new HashMap<String, ShadowConfig>();
     private boolean logMissingShadowMethods = false;
     private static int callDepth = 0;
+
+    static class ShadowConfig {
+        final String shadowClassName;
+        final boolean callThroughByDefault;
+
+        ShadowConfig(String shadowClassName, boolean callThroughByDefault) {
+            this.callThroughByDefault = callThroughByDefault;
+            this.shadowClassName = shadowClassName;
+        }
+    }
 
     public ShadowWrangler(Setup setup) {
         this.setup = setup;
@@ -63,16 +73,16 @@ public class ShadowWrangler implements ClassHandler {
         }
     }
 
-    public void bindShadowClass(String realClassName, Class<?> shadowClass) {
-        bindShadowClass(realClassName, shadowClass.getName());
+    public void bindShadowClass(String realClassName, Class<?> shadowClass, boolean callThroughByDefault) {
+        bindShadowClass(realClassName, shadowClass.getName(), callThroughByDefault);
     }
 
-    public void bindShadowClass(Class<?> realClass, Class<?> shadowClass) {
-        bindShadowClass(realClass.getName(), shadowClass.getName());
+    public void bindShadowClass(Class<?> realClass, Class<?> shadowClass, boolean callThroughByDefault) {
+        bindShadowClass(realClass.getName(), shadowClass.getName(), callThroughByDefault);
     }
 
-    public void bindShadowClass(String realClassName, String shadowClassName) {
-        shadowClassMap.put(realClassName, shadowClassName);
+    public void bindShadowClass(String realClassName, String shadowClassName, boolean callThroughByDefault) {
+        shadowClassMap.put(realClassName, new ShadowConfig(shadowClassName, callThroughByDefault));
         if (debug) System.out.println("shadow " + realClassName + " with " + shadowClassName);
     }
 
@@ -240,28 +250,20 @@ public class ShadowWrangler implements ClassHandler {
     }
 
     private Class<?> findDirectShadowClass(Class<?> originalClass) {
-        String shadowClassName = shadowClassMap.get(originalClass.getName());
-        if (shadowClassName == null) {
+        ShadowConfig shadowConfig = shadowClassMap.get(originalClass.getName());
+        if (shadowConfig == null) {
             return null;
         }
-        return loadClass(shadowClassName, originalClass.getClassLoader());
-    }
-
-    private Class<?> findShadowClass(Class<?> originalClass) {
-        String declaredShadowClassName = getShadowClassName(originalClass);
-        if (declaredShadowClassName == null) {
-            return null;
-        }
-        return loadClass(declaredShadowClassName, originalClass.getClassLoader());
+        return loadClass(shadowConfig.shadowClassName, originalClass.getClassLoader());
     }
 
     private String getShadowClassName(Class clazz) {
-        String shadowClassName = null;
-        while (shadowClassName == null && clazz != null) {
-            shadowClassName = shadowClassMap.get(clazz.getName());
+        ShadowConfig shadowConfig = null;
+        while (shadowConfig == null && clazz != null) {
+            shadowConfig = shadowClassMap.get(clazz.getName());
             clazz = clazz.getSuperclass();
         }
-        return shadowClassName;
+        return shadowConfig == null ? null : shadowConfig.shadowClassName;
     }
 
     private Constructor<?> findConstructor(Object instance, Class<?> shadowClass) {
@@ -492,6 +494,19 @@ public class ShadowWrangler implements ClassHandler {
         }
 
         public boolean shouldDelegateToRealMethodWhenMethodShadowIsMissing() {
+            String className = clazz.getName();
+            ShadowConfig shadowConfig = shadowClassMap.get(className);
+            int dollarIndex;
+            if (shadowConfig == null && (dollarIndex = className.indexOf('$')) > -1) {
+                className = className.substring(0, dollarIndex);
+                shadowConfig = shadowClassMap.get(className);
+
+                // todo: test
+            }
+            if (shadowConfig != null && shadowConfig.callThroughByDefault) {
+                return true;
+            }
+
             boolean delegateToReal = setup.invokeApiMethodBodiesWhenShadowMethodIsMissing(clazz, methodName, paramClasses);
             if (debug) {
                 System.out.println("DEBUG: Shall we invoke real method on " + clazz + "." + methodName + "("

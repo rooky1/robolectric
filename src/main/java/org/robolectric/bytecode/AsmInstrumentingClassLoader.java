@@ -65,7 +65,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
         if (shouldComeFromThisClassLoader) {
             theClass = findClass(name);
         } else {
-            theClass = super.loadClass(name);
+            theClass = getParent().loadClass(name);
         }
 
         classes.put(name, theClass);

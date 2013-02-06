@@ -16,13 +16,22 @@ public class ShadowWrangler implements ClassHandler {
 
     private final Setup setup;
 
-    public boolean debug = false;
+    public boolean debug = true;
     private boolean strictI18n = false;
 
     private final Map<Class, MetaShadow> metaShadowMap = new HashMap<Class, MetaShadow>();
     private Map<String, ShadowConfig> shadowClassMap = new HashMap<String, ShadowConfig>();
     private boolean logMissingShadowMethods = false;
-    private static int callDepth = 0;
+    private static ThreadLocal<Info> infos = new ThreadLocal<Info>() {
+        @Override
+        protected Info initialValue() {
+            return new Info();
+        }
+    };
+
+    private static class Info {
+        private int callDepth = 0;
+    }
 
     static class ShadowConfig {
         final String shadowClassName;
@@ -94,14 +103,15 @@ public class ShadowWrangler implements ClassHandler {
 
     @Override
     public Object methodInvoked(Class clazz, String methodName, Object instance, String[] paramTypes, Object[] params) throws Exception {
-        if (callDepth > MAX_CALL_DEPTH) throw stripStackTrace(new StackOverflowError("too deep!"));
+        Info info = infos.get();
+        if (info.callDepth > MAX_CALL_DEPTH) throw stripStackTrace(new StackOverflowError("too deep!"));
         try {
-            callDepth++;
+            info.callDepth++;
             InvocationPlan invocationPlan = new InvocationPlan(clazz, methodName, instance, paramTypes);
             try {
                 boolean hasShadowImplementation = invocationPlan.prepare();
                 if (debug) {
-                    System.out.println(indent(callDepth) + " -> " +
+                    System.out.println(indent(info.callDepth) + " -> " +
                             clazz.getName() + "." + methodName + "(" + Join.join(", ", paramTypes) + "): "
                             + (hasShadowImplementation ? "shadowed by " + (invocationPlan.shadow == null ? "?" : invocationPlan.shadow.getClass().getName()) : "direct"));
                 }
@@ -135,7 +145,7 @@ public class ShadowWrangler implements ClassHandler {
                 throw new RuntimeException(cause);
             }
         } finally {
-            callDepth--;
+            info.callDepth--;
         }
     }
 

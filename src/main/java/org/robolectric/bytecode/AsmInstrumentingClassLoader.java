@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,12 +46,14 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
     private static boolean debug = false;
 
     private final Setup setup;
+    private final URLClassLoader urls;
     private final Map<String, Class> classes = new HashMap<String, Class>();
     public static final String DIRECT_OBJECT_MARKER_TYPE_DESC = Type.getObjectType(DirectObjectMarker.class.getName().replace('.', '/')).getDescriptor();
 
-    public AsmInstrumentingClassLoader(Setup setup, ClassLoader classLoader) {
-        super(classLoader);
+    public AsmInstrumentingClassLoader(Setup setup, URL... urls) {
+        super(AsmInstrumentingClassLoader.class.getClassLoader());
         this.setup = setup;
+        this.urls = new URLClassLoader(urls, null);
         System.err.println("NEW AsmInstrumentingClassLoader!!!!!!!!!!!!!!!!!!!!!!!");
         new File("./output.txt").delete();
     }
@@ -75,8 +79,12 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
     @Override
     protected Class<?> findClass(final String className) throws ClassNotFoundException {
         if (setup.shouldAcquire(className)) {
-            InputStream classBytesStream = getResourceAsStream(className.replace('.', '/') + ".class");
-          if (classBytesStream == null) throw new ClassNotFoundException(className);
+            String classFilename = className.replace('.', '/') + ".class";
+            InputStream classBytesStream = urls.getResourceAsStream(classFilename);
+            if (classBytesStream == null) {
+                classBytesStream = getResourceAsStream(classFilename);
+            }
+            if (classBytesStream == null) throw new ClassNotFoundException(className);
 
             byte[] origClassBytes;
             try {

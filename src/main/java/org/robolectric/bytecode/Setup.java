@@ -122,6 +122,8 @@ public class Setup {
             return name.contains("Test");
         }
 
+        if (name.matches("com\\.android\\.internal\\.R(\\$.*)?")) return true;
+
         return !(
                 name.matches(".*\\.R(|\\$[a-z]+)$")
                         || CLASSES_TO_ALWAYS_DELEGATE.contains(name)

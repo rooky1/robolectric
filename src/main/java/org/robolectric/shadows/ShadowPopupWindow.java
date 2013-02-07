@@ -32,7 +32,6 @@ public class ShadowPopupWindow {
 
     public void __constructor__(View contentView) {
         setContentView(contentView);
-        getWindowManager();
     }
 
     public void __constructor__(View contentView, int width, int height, boolean focusable) {
@@ -45,7 +44,7 @@ public class ShadowPopupWindow {
     @Implementation
     public void setContentView(View contentView) {
         this.contentView = contentView;
-        context = contentView.getContext();
+        if (contentView != null) context = contentView.getContext();
     }
 
     @Implementation

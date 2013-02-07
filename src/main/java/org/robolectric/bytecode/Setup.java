@@ -52,6 +52,9 @@ public class Setup {
 
 
     public boolean invokeApiMethodBodiesWhenShadowMethodIsMissing(Class clazz, String methodName, Class<?>[] paramClasses) {
+        if (clazz.getName().startsWith("android.support")) {
+            return true;
+        }
         return !isFromAndroidSdk(clazz);
     }
 
@@ -110,7 +113,8 @@ public class Setup {
 
     public Set<MethodRef> methodsToIntercept() {
         return Collections.unmodifiableSet(new HashSet<MethodRef>(asList(
-                new MethodRef(System.class, "loadLibrary")
+                new MethodRef(System.class, "loadLibrary"),
+                new MethodRef("android.os.StrictMode", "trackActivity")
         )));
     }
 
@@ -162,6 +166,14 @@ public class Setup {
             int result = className.hashCode();
             result = 31 * result + methodName.hashCode();
             return result;
+        }
+
+        @Override
+        public String toString() {
+            return "MethodRef{" +
+                    "className='" + className + '\'' +
+                    ", methodName='" + methodName + '\'' +
+                    '}';
         }
     }
 }

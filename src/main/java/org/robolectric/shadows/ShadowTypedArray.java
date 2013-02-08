@@ -90,7 +90,24 @@ public class ShadowTypedArray implements UsesResources {
         return resourceId == -1 ? null : resources.getTextArray(resourceId);
     }
 
-    private ResName getResName(int index) {
+    @Implementation
+    public boolean getValue(int index, android.util.TypedValue outValue) {
+        return false;
+    }
+
+    @Implementation
+    public boolean hasValue(int index) {
+        // todo ResName resName = getResName(index);
+        //String attributeValue = values.getAttributeValue(getResName(index).namespace, getResName(index).name);
+        return true;
+    }
+
+    @Implementation
+    public android.util.TypedValue peekValue(int index) {
+        return null;
+    }
+
+  private ResName getResName(int index) {
         return resourceExtractor.getResName(attrs[index]);
     }
 

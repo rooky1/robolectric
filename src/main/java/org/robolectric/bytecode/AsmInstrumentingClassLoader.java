@@ -17,7 +17,6 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceClassVisitor;
 import org.robolectric.util.Util;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -43,7 +42,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
     private static final Type STRING_TYPE = getType(String.class);
     private static final Type ROBOLECTRIC_INTERNALS_TYPE = Type.getType(RobolectricInternals.class);
 
-    private static boolean debug = false;
+    private static boolean debug = true;
 
     private final Setup setup;
     private final URLClassLoader urls;
@@ -55,7 +54,6 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
         this.setup = setup;
         this.urls = new URLClassLoader(urls, null);
         System.err.println("NEW AsmInstrumentingClassLoader!!!!!!!!!!!!!!!!!!!!!!!");
-        new File("./output.txt").delete();
     }
 
     @Override
@@ -129,7 +127,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
                 FileOutputStream fileOutputStream = new FileOutputStream("tmp/" + className + ".class");
                 fileOutputStream.write(classBytes);
                 fileOutputStream.close();
-                new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(new FileWriter("./output.txt", true))), 0);
+                new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(new FileWriter("tmp/" + className + ".java", true))), 0);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

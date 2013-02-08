@@ -93,7 +93,6 @@ import android.preference.PreferenceGroup;
 import android.preference.PreferenceScreen;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
@@ -406,7 +405,6 @@ import org.robolectric.shadows.ShadowViewConfiguration;
 import org.robolectric.shadows.ShadowViewFlipper;
 import org.robolectric.shadows.ShadowViewGroup;
 import org.robolectric.shadows.ShadowViewMeasureSpec;
-import org.robolectric.shadows.ShadowViewPager;
 import org.robolectric.shadows.ShadowViewStub;
 import org.robolectric.shadows.ShadowViewTreeObserver;
 import org.robolectric.shadows.ShadowWebView;
@@ -769,7 +767,6 @@ public class Robolectric {
                 ShadowViewGroup.class,
                 ShadowViewFlipper.class,
                 ShadowViewMeasureSpec.class,
-                ShadowViewPager.class,
                 ShadowViewStub.class,
                 ShadowViewTreeObserver.class,
                 ShadowWebView.class,
@@ -1439,10 +1436,6 @@ public class Robolectric {
 
     public static ShadowViewFlipper shadowOf(ViewFlipper instance) {
         return (ShadowViewFlipper) shadowOf_(instance);
-    }
-
-    public static ShadowViewPager shadowOf(ViewPager instance) {
-        return (ShadowViewPager) shadowOf_(instance);
     }
 
     public static ShadowViewTreeObserver shadowOf(ViewTreeObserver instance) {

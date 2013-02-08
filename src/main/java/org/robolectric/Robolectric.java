@@ -368,6 +368,7 @@ import org.robolectric.shadows.ShadowSimpleCursorAdapter;
 import org.robolectric.shadows.ShadowSmsManager;
 import org.robolectric.shadows.ShadowSpannableString;
 import org.robolectric.shadows.ShadowSpannableStringBuilder;
+import org.robolectric.shadows.ShadowSpannableStringInternal;
 import org.robolectric.shadows.ShadowSpannedString;
 import org.robolectric.shadows.ShadowSparseArray;
 import org.robolectric.shadows.ShadowSparseBooleanArray;
@@ -451,13 +452,17 @@ public class Robolectric {
     }
 
     public static void bindShadowClass(Class<?> shadowClass) {
-        Implements realClass = shadowClass.getAnnotation(Implements.class);
-        if (realClass == null) {
+        Implements implementsAnnotation = shadowClass.getAnnotation(Implements.class);
+        if (implementsAnnotation == null) {
             throw new IllegalArgumentException(shadowClass + " is not annotated with @Implements");
         }
 
         try {
-            getShadowWrangler().bindShadowClass(realClass.value(), shadowClass, realClass.callThroughByDefault());
+            String className = implementsAnnotation.value().getName();
+            if (!implementsAnnotation.className().isEmpty()) {
+                className = implementsAnnotation.className();
+            }
+            getShadowWrangler().bindShadowClass(className, shadowClass, implementsAnnotation.callThroughByDefault());
         } catch (TypeNotPresentException typeLoadingException) {
             String unloadableClassName = shadowClass.getSimpleName();
             if (isIgnorableClassLoadingException(typeLoadingException)) {
@@ -719,6 +724,7 @@ public class Robolectric {
                 ShadowSmsManager.class,
                 ShadowSpannableString.class,
                 ShadowSpannableStringBuilder.class,
+                ShadowSpannableStringInternal.class,
                 ShadowSpannedString.class,
                 ShadowSparseArray.class,
                 ShadowSparseBooleanArray.class,

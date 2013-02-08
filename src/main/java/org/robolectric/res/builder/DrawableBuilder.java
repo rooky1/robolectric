@@ -44,10 +44,10 @@ public class DrawableBuilder {
         STATE_MAP.put("android:state_window_focused", R.attr.state_window_focused);
     }
 
-    private final ResourceExtractor resourceExtractor;
+    private final ResourceIndex resourceIndex;
 
-    public DrawableBuilder(ResourceExtractor resourceExtractor) {
-        this.resourceExtractor = resourceExtractor;
+    public DrawableBuilder(ResourceIndex resourceIndex) {
+        this.resourceIndex = resourceIndex;
     }
 
     private Drawable getXmlDrawable(Resources resources, DrawableNode.Xml drawableNode, ResName resName) {
@@ -66,7 +66,7 @@ public class DrawableBuilder {
                 layers[i] = getDrawableForNode(node, resName, resources);
             }
             LayerDrawable layerDrawable = new LayerDrawable(layers);
-            shadowOf(layerDrawable).setLoadedFromResourceId(resourceExtractor.getResourceId(resName));
+            shadowOf(layerDrawable).setLoadedFromResourceId(resourceIndex.getResourceId(resName));
             return layerDrawable;
         }
 
@@ -90,7 +90,7 @@ public class DrawableBuilder {
     private Drawable getDrawableForNode(Node node, ResName resName, Resources resources) {
         String drawableName = node.getAttributes().getNamedItemNS(ResourceLoader.ANDROID_NS, "drawable").getNodeValue();
         ResName otherDrawableResName = resName.qualify(drawableName);
-        return resources.getDrawable(resourceExtractor.getResourceId(otherDrawableResName));
+        return resources.getDrawable(resourceIndex.getResourceId(otherDrawableResName));
     }
 
     private NodeList findNodes(String xpathExpression, Document xmlDoc) {
@@ -109,7 +109,7 @@ public class DrawableBuilder {
             Node node = items.item(i);
             Node drawableName = node.getAttributes().getNamedItemNS(ResourceLoader.ANDROID_NS, "drawable");
             if (drawableName != null) {
-                int resId = resourceExtractor.getResourceId(drawableName.getNodeValue(), drawableNode.xmlContext.packageName);
+                int resId = ResName.getResourceId(resourceIndex, drawableName.getNodeValue(), drawableNode.xmlContext.packageName);
                 int stateId = getStateId(node);
                 shDrawable.addState(stateId, resId);
             }
@@ -151,7 +151,7 @@ public class DrawableBuilder {
             return new NinePatchDrawable(resources, null);
         }
 
-        return new BitmapDrawable(BitmapFactory.decodeResource(resources, resourceExtractor.getResourceId(resName)));
+        return new BitmapDrawable(BitmapFactory.decodeResource(resources, resourceIndex.getResourceId(resName)));
     }
 
     public boolean isNinePatchDrawable(DrawableNode drawableNode) {

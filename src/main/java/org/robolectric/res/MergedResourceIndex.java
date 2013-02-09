@@ -1,7 +1,5 @@
 package org.robolectric.res;
 
-import org.robolectric.tester.android.util.ResName;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collections;

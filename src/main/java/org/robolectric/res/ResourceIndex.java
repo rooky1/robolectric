@@ -1,7 +1,5 @@
 package org.robolectric.res;
 
-import org.robolectric.tester.android.util.ResName;
-
 import java.util.HashMap;
 import java.util.Map;
 

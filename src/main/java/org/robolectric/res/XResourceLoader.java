@@ -1,6 +1,7 @@
 package org.robolectric.res;
 
 import android.view.View;
+import org.w3c.dom.Document;
 
 import java.io.File;
 import java.io.InputStream;
@@ -18,6 +19,7 @@ abstract class XResourceLoader implements ResourceLoader {
 
     boolean isInitialized = false;
 
+    final AttrResourceLoader attrResourceLoader = new AttrResourceLoader();
     final Resolver<Boolean> booleanResolver = new BooleanResolver();
     final Resolver<Integer> colorResolver = new ColorResolver();
     final Resolver<Float> dimenResolver = new DimenResolver();
@@ -27,6 +29,8 @@ abstract class XResourceLoader implements ResourceLoader {
     final ResBundle<ViewNode> viewNodes = new ResBundle<ViewNode>();
     final ResBundle<MenuNode> menuNodes = new ResBundle<MenuNode>();
     final ResBundle<DrawableNode> drawableNodes = new ResBundle<DrawableNode>();
+    final ResBundle<PreferenceNode> preferenceNodes = new ResBundle<PreferenceNode>();
+    final ResBundle<Document> xmlDocuments = new ResBundle<Document>();
 
     public XResourceLoader(ResourcePath... resourcePaths) {
         this(asList(resourcePaths));
@@ -56,12 +60,6 @@ abstract class XResourceLoader implements ResourceLoader {
 
     private File getPreferenceResourceDir(File xmlResourceDir) {
         return xmlResourceDir != null ? new File(xmlResourceDir, "xml") : null;
-    }
-
-    @Override
-    public String getNameForId(int id) {
-        init();
-        return resourceIndex.getResourceName(id);
     }
 
     abstract void init();

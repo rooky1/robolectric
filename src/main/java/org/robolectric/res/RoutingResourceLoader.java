@@ -118,7 +118,11 @@ public class RoutingResourceLoader implements ResourceLoader {
     }
 
     private ResourceLoader pickFor(ResName resName) {
-        if (resName == null) return new PackageResourceLoader();
+        if (resName == null) return new XResourceLoader(null) {
+            @Override
+            void init() {
+            }
+        };
         return pickFor(resName.namespace);
     }
 

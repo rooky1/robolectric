@@ -3,14 +3,9 @@ package org.robolectric.res;
 import android.view.View;
 import org.w3c.dom.Document;
 
-import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-
-import static java.util.Arrays.asList;
 
 abstract class XResourceLoader implements ResourceLoader {
     final ResourceIndex resourceIndex;
@@ -32,34 +27,8 @@ abstract class XResourceLoader implements ResourceLoader {
     final ResBundle<PreferenceNode> preferenceNodes = new ResBundle<PreferenceNode>();
     final ResBundle<Document> xmlDocuments = new ResBundle<Document>();
 
-    public XResourceLoader(ResourcePath... resourcePaths) {
-        this(asList(resourcePaths));
-    }
-
-    public XResourceLoader(List<ResourcePath> resourcePaths) {
-        this(resourcePaths, null);
-    }
-
-    public XResourceLoader(List<ResourcePath> resourcePaths, String overrideNamespace) {
-        this.resourceIndex = new ResourceExtractor(resourcePaths);
-        this.resourcePaths = Collections.unmodifiableList(resourcePaths);
-
-
-        if (overrideNamespace != null) {
-            for (ResBundle resBundle : getResBundles()) {
-                resBundle.overrideNamespace(overrideNamespace);
-            }
-        }
-    }
-
-    List<ResBundle<?>> getResBundles() {
-        //noinspection unchecked
-        return Arrays.asList(booleanResolver, colorResolver, dimenResolver, integerResolver,
-                pluralsResolver, stringResolver, viewNodes, menuNodes, drawableNodes);
-    }
-
-    private File getPreferenceResourceDir(File xmlResourceDir) {
-        return xmlResourceDir != null ? new File(xmlResourceDir, "xml") : null;
+    protected XResourceLoader(ResourceIndex resourceIndex) {
+        this.resourceIndex = resourceIndex;
     }
 
     abstract void init();

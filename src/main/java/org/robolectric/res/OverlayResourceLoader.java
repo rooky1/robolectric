@@ -7,6 +7,7 @@ public class OverlayResourceLoader extends XResourceLoader {
     private final List<PackageResourceLoader> subResourceLoaders;
 
     public OverlayResourceLoader(String packageName, List<PackageResourceLoader> subResourceLoaders) {
+        super(/**/);
         this.packageName = packageName;
         this.subResourceLoaders = subResourceLoaders;
     }

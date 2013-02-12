@@ -217,7 +217,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
                     classNode.methods.add(generateStaticInitializerNotifierMethod());
                 } else if (method.name.equals("<init>")) {
                     instrumentConstructor(method);
-                } else if ((method.access & ACC_SYNTHETIC) == 0) {
+                } else if (!isSyntheticAccessorMethod(method)) {
                     instrumentNormalMethod(method);
                 }
             }
@@ -263,6 +263,10 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
 //            for (MethodNode method : (List<MethodNode>)classNode.methods) {
 //                System.out.println("method = " + method.name + method.desc);
 //            }
+        }
+
+        private boolean isSyntheticAccessorMethod(MethodNode method) {
+            return (method.access & ACC_SYNTHETIC) != 0;
         }
 
         private void instrumentSpecial(Set<String> foundMethods, final String methodName, String methodDesc) {

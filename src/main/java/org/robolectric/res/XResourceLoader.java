@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 abstract class XResourceLoader implements ResourceLoader {
-    final ResourceIndex resourceIndex;
+    private final ResourceIndex resourceIndex;
 
     final List<RawResourceLoader> rawResourceLoaders = new ArrayList<RawResourceLoader>();
 
@@ -35,7 +35,6 @@ abstract class XResourceLoader implements ResourceLoader {
 
     @Override
     public String getNameForId(int id) {
-        init();
         return resourceIndex.getResourceName(id);
     }
 
@@ -153,7 +152,7 @@ abstract class XResourceLoader implements ResourceLoader {
     }
 
     @Override
-    public ResourceIndex getResourceExtractor() {
+    public ResourceIndex getResourceIndex() {
         return resourceIndex;
     }
 
@@ -260,7 +259,7 @@ abstract class XResourceLoader implements ResourceLoader {
         }
     }
 
-    private static class PluralsResolver extends ResBundle<PluralResourceLoader.PluralRules> {
+    static class PluralsResolver extends ResBundle<PluralResourceLoader.PluralRules> {
     }
 
     static class StringResolver extends Resolver<String> {

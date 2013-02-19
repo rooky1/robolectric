@@ -31,7 +31,27 @@ abstract class XResourceLoader implements ResourceLoader {
         this.resourceIndex = resourceIndex;
     }
 
-    abstract void init();
+    abstract void doInitialize();
+
+    void initialize() {
+        if (isInitialized) return;
+        doInitialize();
+        isInitialized = true;
+
+        makeImmutable();
+    }
+
+    protected void makeImmutable() {
+        booleanResolver.makeImmutable();
+        colorResolver.makeImmutable();
+        dimenResolver.makeImmutable();
+        integerResolver.makeImmutable();
+        pluralsResolver.makeImmutable();
+        stringResolver.makeImmutable();
+        viewNodes.makeImmutable();
+        menuNodes.makeImmutable();
+        drawableNodes.makeImmutable();
+    }
 
     @Override
     public String getNameForId(int id) {
@@ -40,20 +60,20 @@ abstract class XResourceLoader implements ResourceLoader {
 
     @Override
     public int getColorValue(ResName resName, String qualifiers) {
-        init();
+        initialize();
         Integer value = colorResolver.resolve(resName, qualifiers);
         return value == null ? -1 : value;
     }
 
     @Override
     public String getStringValue(ResName resName, String qualifiers) {
-        init();
+        initialize();
         return stringResolver.resolve(resName, qualifiers);
     }
 
     @Override
     public String getPluralStringValue(ResName resName, int quantity, String qualifiers) {
-        init();
+        initialize();
         PluralResourceLoader.PluralRules pluralRules = pluralsResolver.get(resName, qualifiers);
         if (pluralRules == null) return null;
 
@@ -64,25 +84,25 @@ abstract class XResourceLoader implements ResourceLoader {
 
     @Override
     public float getDimenValue(ResName resName, String qualifiers) {
-        init();
+        initialize();
         return dimenResolver.resolve(resName, qualifiers);
     }
 
     @Override
     public int getIntegerValue(ResName resName, String qualifiers) {
-        init();
+        initialize();
         return integerResolver.resolve(resName, qualifiers);
     }
 
     @Override
     public boolean getBooleanValue(ResName resName, String qualifiers) {
-        init();
+        initialize();
         return booleanResolver.resolve(resName, qualifiers);
     }
 
     @Override
     public Document getXml(ResName resName, String qualifiers) {
-        init();
+        initialize();
         return xmlDocuments.get(resName, qualifiers);
     }
 
@@ -93,7 +113,7 @@ abstract class XResourceLoader implements ResourceLoader {
 
     @Override
     public InputStream getRawValue(int id) {
-        init();
+        initialize();
 
         for (RawResourceLoader rawResourceLoader : rawResourceLoaders) {
             InputStream stream = rawResourceLoader.getValue(id);
@@ -105,7 +125,7 @@ abstract class XResourceLoader implements ResourceLoader {
 
     @Override
     public String[] getStringArrayValue(ResName resName, String qualifiers) {
-        init();
+        initialize();
 
         if (resName == null) return null;
         resName = new ResName(resName.namespace, "string-array", resName.name); // ugh
@@ -115,7 +135,7 @@ abstract class XResourceLoader implements ResourceLoader {
 
     @Override
     public int[] getIntegerArrayValue(ResName resName, String qualifiers) {
-        init();
+        initialize();
 
         if (resName == null) return null;
         resName = new ResName(resName.namespace, "integer-array", resName.name); // ugh
@@ -139,14 +159,14 @@ abstract class XResourceLoader implements ResourceLoader {
 
     @Override
     public ViewNode getLayoutViewNode(ResName resName, String qualifiers) {
-        init();
+        initialize();
         if (resName == null) return null;
         return viewNodes.get(resName, qualifiers);
     }
 
     @Override
     public MenuNode getMenuNode(ResName resName, String qualifiers) {
-        init();
+        initialize();
         if (resName == null) return null;
         return menuNodes.get(resName, qualifiers);
     }
@@ -158,13 +178,13 @@ abstract class XResourceLoader implements ResourceLoader {
 
     @Override
     public boolean hasAttributeFor(Class<? extends View> viewClass, String namespace, String attribute) {
-        init();
+        initialize();
         return attrResourceLoader.hasAttributeFor(viewClass, namespace, attribute);
     }
 
     @Override
     public String convertValueToEnum(Class<? extends View> viewClass, String namespace, String attribute, String part) {
-        init();
+        initialize();
         return attrResourceLoader.convertValueToEnum(viewClass, namespace, attribute, part);
     }
 

@@ -120,7 +120,7 @@ public class RoutingResourceLoader implements ResourceLoader {
     private ResourceLoader pickFor(ResName resName) {
         if (resName == null) return new XResourceLoader(null) {
             @Override
-            void init() {
+            void doInitialize() {
             }
         };
         return pickFor(resName.namespace);

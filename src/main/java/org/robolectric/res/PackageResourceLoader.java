@@ -11,9 +11,7 @@ public class PackageResourceLoader extends XResourceLoader {
         this.resourcePath = resourcePath;
     }
 
-    void init() {
-        if (isInitialized) return;
-
+    void doInitialize() {
         try {
             loadEverything();
         } catch (I18nException e) {
@@ -47,8 +45,6 @@ public class PackageResourceLoader extends XResourceLoader {
         loadOtherResources(resourcePath);
 
         rawResourceLoaders.add(new RawResourceLoader(resourceIndex, resourcePath.resourceBase));
-
-        isInitialized = true;
     }
 
     protected void loadOtherResources(ResourcePath resourcePath) {

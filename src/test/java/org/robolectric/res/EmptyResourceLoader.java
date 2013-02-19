@@ -5,6 +5,6 @@ public class EmptyResourceLoader extends XResourceLoader {
         super(new ResourceExtractor());
     }
 
-    void init() {
+    void doInitialize() {
     }
 }

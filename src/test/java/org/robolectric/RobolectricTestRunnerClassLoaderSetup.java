@@ -11,6 +11,7 @@ import org.robolectric.bytecode.RobolectricClassLoader;
 public class RobolectricTestRunnerClassLoaderSetup {
 
     @Test
+    // TODO this test fails in IntelliJ
     public void testUsingClassLoader() throws ClassNotFoundException {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Assert.assertEquals(classLoader.getClass().getName(), RobolectricClassLoader.class.getName());

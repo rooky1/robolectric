@@ -1,5 +1,6 @@
 package org.robolectric.shadows;
 
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation.AnimationListener;
@@ -9,7 +10,6 @@ import org.robolectric.internal.Implements;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.List;
 
 import static org.robolectric.Robolectric.shadowOf;
 
@@ -19,10 +19,12 @@ import static org.robolectric.Robolectric.shadowOf;
 @SuppressWarnings({"UnusedDeclaration"})
 @Implements(ViewGroup.class)
 public class ShadowViewGroup extends ShadowView {
-    private List<View> children = new ArrayList<View>();
+    private ArrayList<View> children = new ArrayList<View>();
     private AnimationListener animListener;
     private LayoutAnimationController layoutAnim;
     private boolean disallowInterceptTouchEvent = false;
+    private MotionEvent interceptedTouchEvent;
+    private ViewGroup.OnHierarchyChangeListener onHierarchyChangeListener;
 
     @Implementation
     @Override
@@ -64,7 +66,12 @@ public class ShadowViewGroup extends ShadowView {
 
     @Implementation
     public void addView(View child) {
+        if (child.getParent() != null) {
+            throw new IllegalStateException("The specified child already has a parent. You must call removeView() " +
+                    "on the child's parent first.");
+        }
         ((ViewGroup) realView).addView(child, -1);
+        requestLayout();
     }
 
     @Implementation
@@ -77,6 +84,9 @@ public class ShadowViewGroup extends ShadowView {
             }
         }
         ((ViewGroup)realView).addView(child, index, params);
+        // todo keep or not? PG & RS 2/19/13
+//        shadowOf(child).parent = this;
+//        requestLayout();
     }
 
     @Implementation
@@ -107,16 +117,6 @@ public class ShadowViewGroup extends ShadowView {
     }
 
     @Implementation
-    public void removeView(View child) {
-        // Android's ViewGroup ignores the child when it is null. Do the same here.
-        if (child == null) return;
-        if (children.remove(child)) {
-            shadowOf(child).parent = null;
-            removedChild(child);
-        }
-    }
-
-    @Implementation
     public int indexOfChild(View child) {
         int count = getChildCount();
         for (int i = 0; i < count; i++) {
@@ -134,23 +134,33 @@ public class ShadowViewGroup extends ShadowView {
 
     @Implementation
     public View getChildAt(int index) {
-        return isValidIndex(index) ? children.get(index) : null;
+    	if( index >= children.size() ){ return null; }
+        return children.get(index);
     }
 
     @Implementation
     public void removeAllViews() {
         for (View child : children) {
             shadowOf(child).parent = null;
-            removedChild(child);
         }
         children.clear();
+        requestLayout();
     }
 
     @Implementation
     public void removeViewAt(int position) {
         View child = children.remove(position);
         shadowOf(child).parent = null;
-        removedChild(child);
+    }
+
+    @Implementation
+    public void removeView(View child) {
+        // Android's ViewGroup ignores the child when it is null. Do the same here.
+        if (child == null) return;
+        if (children.remove(child)) {
+            shadowOf(child).parent = null;
+            removedChild(child);
+        }
     }
 
     @Override
@@ -175,6 +185,11 @@ public class ShadowViewGroup extends ShadowView {
                 child.clearFocus();
             }
         }
+    }
+
+    @Implementation
+    public void setOnHierarchyChangeListener(ViewGroup.OnHierarchyChangeListener onHierarchyChangeListener) {
+        this.onHierarchyChangeListener = onHierarchyChangeListener;
     }
 
     /**
@@ -229,31 +244,15 @@ public class ShadowViewGroup extends ShadowView {
     public AnimationListener getLayoutAnimationListener() {
         return animListener;
     }
-
-    @Override
-    public void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        for (int i = 0; i < getChildCount(); i++) {
-            shadowOf(getChildAt(i)).callOnAttachedToWindow();
-        }
-    }
-
-    @Override
-    public void onDetachedFromWindow() {
-        for (int i = 0; i < getChildCount(); i++) {
-            shadowOf(getChildAt(i)).callOnDetachedFromWindow();
-        }
-        super.onDetachedFromWindow();
-    }
-
+    
     @Implementation
     public void setLayoutAnimation(LayoutAnimationController layoutAnim) {
-        this.layoutAnim = layoutAnim;
+    	this.layoutAnim = layoutAnim;
     }
-
+    
     @Implementation
     public LayoutAnimationController getLayoutAnimation() {
-        return layoutAnim;
+    	return layoutAnim;
     }
 
     @Implementation
@@ -272,4 +271,15 @@ public class ShadowViewGroup extends ShadowView {
     private boolean isValidIndex(int i) {
         return i >= 0 && i < children.size();
     }
+
+    public MotionEvent getInterceptedTouchEvent() {
+        return interceptedTouchEvent;
+    }
+
+    @Implementation
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        interceptedTouchEvent = ev;
+        return false;
+    }
+
 }

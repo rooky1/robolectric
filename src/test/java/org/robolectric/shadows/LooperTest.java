@@ -37,6 +37,20 @@ public class LooperTest {
     }
 
     @Test
+    public void idleConstantly_runsPostDelayedTasksImmediately() {
+        ShadowLooper.idleMainLooperConstantly(true);
+        final boolean[] wasRun = new boolean[]{false};
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                wasRun[0] = true;
+            }
+        }, 2000);
+
+        assertTrue(wasRun[0]);
+    }
+
+    @Test
     public void differentThreadsGetDifferentLoopers() {
         Looper mainLooper = Looper.getMainLooper();
         Looper thisThreadsLooper = Looper.myLooper();

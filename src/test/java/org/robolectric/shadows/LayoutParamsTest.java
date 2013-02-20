@@ -1,5 +1,7 @@
 package org.robolectric.shadows;
 
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.Gallery;
 import org.robolectric.TestRunners;
 import org.junit.Test;
@@ -15,5 +17,16 @@ public class LayoutParamsTest {
         Gallery.LayoutParams layoutParams = new Gallery.LayoutParams(123, 456);
         assertThat(layoutParams.width, equalTo(123));
         assertThat(layoutParams.height, equalTo(456));
+    }
+    
+    @Test
+    public void constructor_canTakeSourceLayoutParams() throws Exception {
+        ViewGroup.LayoutParams sourceLayoutParams = new ViewGroup.LayoutParams(123, 456);
+        ViewGroup.LayoutParams layoutParams1 = new ViewGroup.LayoutParams(sourceLayoutParams);
+        FrameLayout.LayoutParams layoutParams2 = new FrameLayout.LayoutParams(sourceLayoutParams);
+        assertThat(layoutParams1.height, equalTo(456));
+        assertThat(layoutParams1.width, equalTo(123));
+        assertThat(layoutParams2.height, equalTo(456));
+        assertThat(layoutParams1.width, equalTo(123));
     }
 }
